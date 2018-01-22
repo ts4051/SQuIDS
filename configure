@@ -218,11 +218,13 @@ sed -e "s|__SQUIDS_VERSION__|$VERSION_NUM|g" \
 
 echo "Generating makefile..."
 
+PWD=`pwd`
+
 echo "# Directories
-LIBDIR:=lib
-INCDIR:=include
-SQINCDIR:=include/SQuIDS
-SRCDIR:=src
+LIBDIR:=$PWD/lib
+INCDIR:=$PWD/include
+SQINCDIR:=$PWD/include/SQuIDS
+SRCDIR:=$PWD/src
 
 # Compiler
 CC:=$CC

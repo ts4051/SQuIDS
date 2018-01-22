@@ -1,8 +1,12 @@
 include ../../settings.mk
 
-PATH_SQUIDS=../..
-CXXFLAGS+=-I$(PATH_SQUIDS)/$(INCDIR)
-LDFLAGS+= -Wl,-rpath -Wl,$(PATH_SQUIDS)/$(LIBDIR) -L$(PATH_SQUIDS)/$(LIBDIR) -lSQuIDS
+#PATH_SQUIDS=../..
+#CXXFLAGS+=-I$(INCDIR)
+#LDFLAGS+= -Wl,-rpath -Wl,$(LIBDIR) -L$(LIBDIR) -lSQuIDS
+
+CXXFLAGS+=-I$(INCDIR)
+LDFLAGS+= -Wl,-rpath -Wl,$(LIBDIR) -L$(LIBDIR) -lSQuIDS
+
 EXE=vacuum.exe
 
 # Compilation rules
