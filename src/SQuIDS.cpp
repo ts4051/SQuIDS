@@ -49,7 +49,8 @@ h_max(std::numeric_limits<double>::max()),
 abs_error(1e-20),
 rel_error(1e-20),
 last_dstate_ptr(nullptr),
-last_estate_ptr(nullptr)
+last_estate_ptr(nullptr),
+debug(false)
 {
   sys.function = &RHS;
   sys.jacobian = NULL;
@@ -391,23 +392,29 @@ void SQuIDS::Set_AdaptiveStep(bool opt){
 }
 void SQuIDS::Set_CoherentRhoTerms(bool opt){
   CoherentRhoTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||DecoherenceTerms||GammaScalarTerms||OtherScalarTerms);
 }
 void SQuIDS::Set_NonCoherentRhoTerms(bool opt){
   NonCoherentRhoTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||DecoherenceTerms||GammaScalarTerms||OtherScalarTerms);
 }
 void SQuIDS::Set_OtherRhoTerms(bool opt){
   OtherRhoTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||DecoherenceTerms||GammaScalarTerms||OtherScalarTerms);
 }
+
+void SQuIDS::Set_DecoherenceTerms(bool opt){
+  DecoherenceTerms=opt;
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||DecoherenceTerms||GammaScalarTerms||OtherScalarTerms);
+}
+
 void SQuIDS::Set_GammaScalarTerms(bool opt){
   GammaScalarTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||DecoherenceTerms||GammaScalarTerms||OtherScalarTerms);
 }
 void SQuIDS::Set_OtherScalarTerms(bool opt){
   OtherScalarTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||DecoherenceTerms||GammaScalarTerms||OtherScalarTerms);
 }
 
 void SQuIDS::Set_AnyNumerics(bool opt){
@@ -487,13 +494,35 @@ void SQuIDS::Derive(double at){
         dstate[ei].rho[i] = iCommutator(estate[ei].rho[i],HI(ei,i,t));
       else
         dstate[ei].rho[i].SetAllComponents(0.);
-
       // Non coherent interaction
       if(NonCoherentRhoTerms)
         dstate[ei].rho[i] -= ACommutator(GammaRho(ei,i,t),estate[ei].rho[i]);
       // Other possible interaction, for example involving the Scalars or non linear terms in rho.
       if(OtherRhoTerms)
         dstate[ei].rho[i] += InteractionsRho(ei,i,t);
+      // Decoherence
+      if(DecoherenceTerms) {
+        // Get the Gamma matric and calculate D[rho]
+        auto gamma_matrix = DecohGamma(ei,i,t);
+        std::vector<double> D_rho_tmp;
+        for( unsigned int j=0 ; j < (nsun*nsun) ; ++j ) {
+          D_rho_tmp.push_back( gamma_matrix[j] * estate[ei].rho[i][j] );
+        }
+        SU_vector D_rho(D_rho_tmp);
+        if(debug) std::cout << "Decoherence : Gamma = " << gamma_matrix << " : rho = " << estate[ei].rho[i] << " : D[rho]" << D_rho << std::endl;
+        dstate[ei].rho[i] -= D_rho;
+      }
+
+      //Some debug logging TODO remove once have everything working
+      if (debug) {
+        if (ei == 0) {
+          if (i==0) {
+            std::cout << "Evolving state : t = " << t << " : rho = " << estate[ei].rho[i] << " : Total prob = " << (estate[ei].rho[i]*estate[ei].rho[i]) <<  std::endl;
+          }
+        }
+      }
+
+
     }
     //Scalars
     for(unsigned int is=0;is<nscalars;is++){

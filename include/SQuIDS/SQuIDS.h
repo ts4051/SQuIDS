@@ -117,7 +117,7 @@ class SQuIDS {
   };
 
  private:
-  bool CoherentRhoTerms,NonCoherentRhoTerms,OtherRhoTerms,GammaScalarTerms,OtherScalarTerms,AnyNumerics;
+  bool CoherentRhoTerms,NonCoherentRhoTerms,OtherRhoTerms,DecoherenceTerms,GammaScalarTerms,OtherScalarTerms,AnyNumerics;
   bool is_init;
   bool adaptive_step;
  
@@ -141,6 +141,8 @@ class SQuIDS {
   std::unique_ptr<SU_state[]> dstate;
   double* last_dstate_ptr;
   double* last_estate_ptr;
+
+  bool debug;
   
   //***************************************************************
   ///\brief Sets the evolution state and derivative system pointer for GSL use
@@ -255,6 +257,10 @@ class SQuIDS {
   ///\param ix Index in the x-array
   ///\param t time
   virtual SU_vector InteractionsRho(unsigned int ix, unsigned int irho, double t) const{ return SU_vector(nsun);}
+  ///\brief Decoherence Gamma matrix
+  ///\param ix Index in the x-array
+  ///\param t time
+  virtual SU_vector DecohGamma(unsigned int ix, unsigned int irho, double t) const{ return SU_vector(nsun);}
   ///\brief Attenuation for the scalar functions
   ///\param ix Index in the x-array
   ///\param t time
@@ -313,6 +319,8 @@ class SQuIDS {
   void Set_NonCoherentRhoTerms(bool opt);
   ///\brief Activate other SU_vector interactions
   void Set_OtherRhoTerms(bool opt);
+  void Set_DecoherenceTerms(bool opt);
+
   ///\brief Activate other scalar interactions
   void Set_GammaScalarTerms(bool opt);
   ///\brief Activate other scalar interactions
@@ -427,6 +435,14 @@ class SQuIDS {
 
   ///\brief Returns the parameter object for this system
   const Const& GetParams() const{ return(params); }
+
+
+  /// \brief Sets the debug information on/off
+  /// @param debug_ Boolean that toggles debuging on and off.
+  void Set_Debug(bool debug_){
+    debug = debug_;
+  }
+
 };
 
 } //namespace squids
