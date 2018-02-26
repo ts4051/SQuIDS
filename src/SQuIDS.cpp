@@ -36,6 +36,7 @@ SQuIDS::SQuIDS():
 CoherentRhoTerms(false),
 NonCoherentRhoTerms(false),
 OtherRhoTerms(false),
+DecoherenceTerms(false),
 GammaScalarTerms(false),
 OtherScalarTerms(false),
 AnyNumerics(false),
@@ -67,6 +68,7 @@ SQuIDS::SQuIDS(SQuIDS&& other):
 CoherentRhoTerms(other.CoherentRhoTerms),
 NonCoherentRhoTerms(other.NonCoherentRhoTerms),
 OtherRhoTerms(other.OtherRhoTerms),
+DecoherenceTerms(other.DecoherenceTerms),
 GammaScalarTerms(other.GammaScalarTerms),
 OtherScalarTerms(other.OtherScalarTerms),
 AnyNumerics(other.AnyNumerics),
@@ -190,6 +192,7 @@ SQuIDS& SQuIDS::operator=(SQuIDS&& other){
   CoherentRhoTerms=other.CoherentRhoTerms;
   NonCoherentRhoTerms=other.NonCoherentRhoTerms;
   OtherRhoTerms=other.OtherRhoTerms;
+  DecoherenceTerms=other.DecoherenceTerms;
   GammaScalarTerms=other.GammaScalarTerms;
   OtherScalarTerms=other.OtherScalarTerms;
   AnyNumerics=other.AnyNumerics;
@@ -503,6 +506,7 @@ void SQuIDS::Derive(double at){
       // Decoherence
       if(DecoherenceTerms) {
         // Get the Gamma matric and calculate D[rho]
+        // TODO Speed this up using the suggestions in the desription of SU_vector in SUNalg.h
         auto gamma_matrix = DecohGamma(ei,i,t);
         std::vector<double> D_rho_tmp;
         for( unsigned int j=0 ; j < (nsun*nsun) ; ++j ) {
