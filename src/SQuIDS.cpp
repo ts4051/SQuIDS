@@ -97,7 +97,8 @@ params(std::move(other.params)),
 state(std::move(other.state)),
 estate(std::move(other.estate)),
 last_dstate_ptr(other.last_dstate_ptr),
-last_estate_ptr(other.last_estate_ptr)
+last_estate_ptr(other.last_estate_ptr),
+debug(other.debug)
 {
   sys.params=this;
   other.is_init=false; //other is no longer usable, since we stole its contents
@@ -223,6 +224,7 @@ SQuIDS& SQuIDS::operator=(SQuIDS&& other){
   last_dstate_ptr=other.last_dstate_ptr;
   last_estate_ptr=other.last_estate_ptr;
   sys.params=this;
+  debug=other.debug;
   other.is_init=false; //other is no longer usable, since we stole its contents
   
   return(*this);
@@ -505,8 +507,11 @@ void SQuIDS::Derive(double at){
         dstate[ei].rho[i] += InteractionsRho(ei,i,t);
       // Decoherence
       if(DecoherenceTerms) {
-        // Get the Gamma matric and calculate D[rho]
+        // Get the Gamma matrix (containing the coefficients Gamma_ij that multiply each rho_ij 
+        // in the D[rho] operator), and combine with rho to get D[rho].
+        // Subtract D[rho] from d(rho)/dt
         // TODO Speed this up using the suggestions in the desription of SU_vector in SUNalg.h
+        // Maybe this logic should be done in DecohGamma() instead of here, such that D[rho] is instead returned?
         auto gamma_matrix = DecohGamma(ei,i,t);
         std::vector<double> D_rho_tmp;
         for( unsigned int j=0 ; j < (nsun*nsun) ; ++j ) {
