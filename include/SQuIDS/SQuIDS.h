@@ -257,10 +257,10 @@ class SQuIDS {
   ///\param ix Index in the x-array
   ///\param t time
   virtual SU_vector InteractionsRho(unsigned int ix, unsigned int irho, double t) const{ return SU_vector(nsun);}
-  ///\brief Decoherence Gamma matrix
+  ///\brief Decoherence operator
   ///\param ix Index in the x-array
   ///\param t time
-  virtual SU_vector DecohGamma(unsigned int ix, unsigned int irho, double t) const{ return SU_vector(nsun);}
+  virtual SU_vector D_Rho(unsigned int ix, unsigned int irho, double t) const{ return SU_vector(nsun);}
   ///\brief Attenuation for the scalar functions
   ///\param ix Index in the x-array
   ///\param t time

@@ -506,20 +506,8 @@ void SQuIDS::Derive(double at){
       if(OtherRhoTerms)
         dstate[ei].rho[i] += InteractionsRho(ei,i,t);
       // Decoherence
-      if(DecoherenceTerms) {
-        // Get the Gamma matrix (containing the coefficients Gamma_ij that multiply each rho_ij 
-        // in the D[rho] operator), and combine with rho to get D[rho].
-        // Subtract D[rho] from d(rho)/dt
-        // TODO Speed this up using the suggestions in the desription of SU_vector in SUNalg.h
-        // Maybe this logic should be done in DecohGamma() instead of here, such that D[rho] is instead returned?
-        auto gamma_matrix = DecohGamma(ei,i,t);
-        std::vector<double> D_rho_tmp;
-        for( unsigned int j=0 ; j < (nsun*nsun) ; ++j ) {
-          D_rho_tmp.push_back( gamma_matrix[j] * estate[ei].rho[i][j] );
-        }
-        SU_vector D_rho(D_rho_tmp);
-        if(debug) std::cout << "Decoherence : Gamma = " << gamma_matrix << " : rho = " << estate[ei].rho[i] << " : D[rho]" << D_rho << std::endl;
-        dstate[ei].rho[i] -= D_rho;
+      if(DecoherenceTerms) { //TODO Maybe this should be instead labelled `DissipationTerms`?
+        dstate[ei].rho[i] -= D_Rho(ei,i,t);
       }
 
       //Some debug logging TODO remove once have everything working
