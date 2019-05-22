@@ -6,8 +6,17 @@ using squids::SU_vector;
 
 void check_all_components_equal(const SU_vector& v, double expected, std::string context){
 	auto components=v.GetComponents();
-	if(!std::all_of(components.begin(),components.end(),[=](double c){ return(c==expected); }))
+	if(!std::all_of(components.begin(),components.end(),[=](double c){
+		return(std::abs(c-expected)<std::abs(expected*std::numeric_limits<double>::epsilon()));
+	  })){
 		std::cout << "components are not correctly set from " << context << '\n';
+		std::cout.precision(20);
+		std::cout << "  expected value: " << expected << " actual values: ";
+		for(auto component : components)
+			std::cout << component << ' ';
+		std::cout << "relative error: " << std::abs(components.front()-expected)/std::numeric_limits<double>::epsilon();
+		std::cout << std::endl;
+	}
 }
 
 //Test whether operations which change code paths depending on the alignment
@@ -16,7 +25,7 @@ void check_all_components_equal(const SU_vector& v, double expected, std::string
 int main(){
 	double a=1.7, b=2.2, c=3.4;
 	std::string context;
-	for(unsigned int i=1; i<=6; i++){
+	for(unsigned int i=2; i<=6; i++){
 		std::cout << "size " << i << std::endl;
 		//make buffers with some wiggle room
 		std::unique_ptr<double[]> store1(new double[i*i+2*(32/sizeof(double))]);

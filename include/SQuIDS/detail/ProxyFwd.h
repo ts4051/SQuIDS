@@ -24,7 +24,7 @@
     #define SQUIDS_POINTER_IS_ALIGNED(ptr,alignment) do{}while(0) //not available
   #endif
 #endif
-#if defined(__GNUC__) && !defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
   //All GCC versions otherwise able to compile the code should support this
   #define SQUIDS_COMPILER_ASSUME(axiom) if(not (axiom)) __builtin_unreachable()
   #define SQUIDS_POINTER_IS_ALIGNED(ptr,alignment) \
@@ -51,14 +51,18 @@
   #define __has_attribute(x) 0
 #endif
 #if __has_attribute(always_inline)
-  #define SQUIDS_ALWAYS_INLINE __attribute__((always_inline))
+  #define SQUIDS_ALWAYS_INLINE __attribute__((always_inline)) inline
 #else
   #define SQUIDS_ALWAYS_INLINE
 #endif
 
 //determine whether we can do atomic operations
 #ifdef __PGI
-  #define SQUIDS_USE_STORAGE_CACHE 0
+  #if __PGIC__<18
+    #define SQUIDS_USE_STORAGE_CACHE 0
+  #else
+    #define SQUIDS_USE_STORAGE_CACHE 1
+  #endif
 #else
   #define SQUIDS_USE_STORAGE_CACHE 1
 #endif
@@ -253,6 +257,11 @@ struct SU_vector_operator_access;
     bool mayStealArg1() const{
       return(flags&detail::Arg1Movable && operation_traits<Op>::elementwise);
     }
+    ///whether the result of the operation can be written directly
+    ///into the storage of the second operand
+    bool mayStealArg2() const{
+      return(flags&detail::Arg2Movable && operation_traits<Op>::elementwise);
+    }
   };
   
   //fwd decls for operation proxies
@@ -444,7 +453,48 @@ struct SU_vector_operator_access;
     constexpr static bool equal_target_size=Flags&EqualSizes;
     constexpr static bool aligned_storage=Flags&AlignedStorage;
   };
-}
+  
+  ///The result of a general element-wise operation on two SU_vectors
+  template<typename Op>
+  struct BinaryElementwiseOpProxy : public EvaluationProxy<BinaryElementwiseOpProxy<Op>>{
+    Op op;
+    
+    ///The application of op to suv1 and suv2
+    BinaryElementwiseOpProxy(Op op, const SU_vector& suv1,const SU_vector& suv2,int flags=0):
+    EvaluationProxy<BinaryElementwiseOpProxy<Op>>{suv1,suv2,flags},op(op){}
+    
+    template<typename VW, bool Aligned=false>
+    void compute(VW target) const;
+  };
+  
+  template<typename Op>
+  struct operation_traits<BinaryElementwiseOpProxy<Op>>{
+    constexpr static bool elementwise=true;
+    constexpr static unsigned int vector_arity=2;
+    constexpr static bool no_alias_target=false;
+    constexpr static bool equal_target_size=false;
+    constexpr static bool aligned_storage=false;
+  };
+
+  template<typename T>
+  struct corresponding_SU_vector{
+    using type=SU_vector;
+  };
+  template<>
+  struct corresponding_SU_vector<const SU_vector&>{
+    using type=const SU_vector&;
+  };
+  template<>
+  struct corresponding_SU_vector<SU_vector&>{
+    using type=SU_vector&;
+  };
+  template<>
+  struct corresponding_SU_vector<SU_vector&&>{
+    using type=SU_vector&&;
+  };
+  
+  
+} //namespace detail
   
 } //namespace SQuIDS
 

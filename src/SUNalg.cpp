@@ -124,6 +124,8 @@ size(dim*dim),
 isinit(true),
 isinit_d(false)
 {
+  if(dim==1)
+    throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: dimension 1 is not supported");
   if(dim>SQUIDS_MAX_HILBERT_DIM)
     throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: only up to SU(" SQUIDS_MAX_HILBERT_DIM_STR ") is supported");
   alloc_aligned(dim,size,components,ptr_offset);
@@ -140,6 +142,8 @@ isinit_d(false)
 {
   if(dim*dim!=size)
     throw std::runtime_error("SU_vector::SU_vector(std::vector<double>): Vector size must be a square");
+  if(dim==1)
+    throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: dimension 1 is not supported");
   if(dim>SQUIDS_MAX_HILBERT_DIM)
     throw std::runtime_error("SU_vector::SU_vector(std::vector<double>): Invalid size: only up to SU(" SQUIDS_MAX_HILBERT_DIM_STR ") is supported");
   std::copy(comp.begin(),comp.end(),components);
@@ -155,6 +159,8 @@ isinit_d(false)
 {
   if(m->size1!=m->size2)
     throw std::runtime_error("SU_vector::SU_vector(gsl_matrix_complex*): Matrix must be square");
+  if(dim==1)
+    throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: dimension 1 is not supported");
   if(dim>SQUIDS_MAX_HILBERT_DIM)
     throw std::runtime_error("SU_vector::SU_vector(gsl_matrix_complex*): Invalid size: only up to SU(" SQUIDS_MAX_HILBERT_DIM_STR ") is supported");
 
@@ -207,6 +213,8 @@ void ComponentsFromMatrices(double* components, unsigned int dim, const sq_array
 } // close unnamed namespace
 
 SU_vector SU_vector::Projector(unsigned int d, unsigned int ii){
+  if(d==1)
+    throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: dimension 1 is not supported");
   if(d>SQUIDS_MAX_HILBERT_DIM)
     throw std::runtime_error("SU_vector::Projector(unsigned int, unsigned int): Invalid size: only up to SU(" SQUIDS_MAX_HILBERT_DIM_STR ") is supported");
   if(ii>=d)
@@ -226,6 +234,8 @@ SU_vector SU_vector::Projector(unsigned int d, unsigned int ii){
 }
 
 SU_vector SU_vector::Identity(unsigned int d){
+  if(d==1)
+    throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: dimension 1 is not supported");
   if(d>SQUIDS_MAX_HILBERT_DIM)
     throw std::runtime_error("SU_vector::Identity(unsigned int): Invalid size: only up to SU(" SQUIDS_MAX_HILBERT_DIM_STR ") is supported");
 
@@ -243,6 +253,8 @@ SU_vector SU_vector::Identity(unsigned int d){
 }
 
 SU_vector SU_vector::PosProjector(unsigned int d, unsigned int ii){
+  if(d==1)
+    throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: dimension 1 is not supported");
   if(d>SQUIDS_MAX_HILBERT_DIM)
     throw std::runtime_error("SU_vector::PosProjector(unsigned int, unsigned int): Invalid size: only up to SU(" SQUIDS_MAX_HILBERT_DIM_STR ") is supported");
   if(ii>=d)
@@ -265,6 +277,8 @@ SU_vector SU_vector::PosProjector(unsigned int d, unsigned int ii){
 }
 
 SU_vector SU_vector::NegProjector(unsigned int d, unsigned int ii){
+  if(d==1)
+    throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: dimension 1 is not supported");
   if(d>SQUIDS_MAX_HILBERT_DIM)
     throw std::runtime_error("SU_vector::NegProjector(unsigned int, unsigned int): Invalid size: only up to SU(" SQUIDS_MAX_HILBERT_DIM_STR ") is supported");
   if(ii>=d)
@@ -287,6 +301,8 @@ SU_vector SU_vector::NegProjector(unsigned int d, unsigned int ii){
 }
 
 SU_vector SU_vector::Generator(unsigned int d, unsigned int ii){
+  if(d==1)
+    throw std::runtime_error("SU_vector::SU_vector(unsigned int): Invalid size: dimension 1 is not supported");
   if(d>SQUIDS_MAX_HILBERT_DIM)
     throw std::runtime_error("SU_vector::Component(unsigned int, unsigned int): Invalid size: only up to SU(" SQUIDS_MAX_HILBERT_DIM_STR ") is supported");
   if(ii>=d*d)
@@ -309,13 +325,18 @@ std::vector<double> SU_vector::GetComponents() const{
     x[i] = components[i];
   return x;
 }
+  
+void SU_vector::GetGSLMatrix(gsl_matrix_complex* matrix) const{
+  assert(matrix->size1==dim && matrix->size2==dim);
+#include <SQuIDS/SU_inc/SUToMatrixSelect.txt>
+}
 
 std::unique_ptr<gsl_matrix_complex,void (*)(gsl_matrix_complex*)>
 SU_vector::GetGSLMatrix() const {
   if( !isinit and !isinit_d)
     throw std::runtime_error("SU_vector::GetGSLMatrix(): SU_vector not initialized.");
   gsl_matrix_complex * matrix = gsl_matrix_complex_alloc(dim,dim);
-#include <SQuIDS/SU_inc/SUToMatrixSelect.txt>
+  GetGSLMatrix(matrix);
   return std::unique_ptr<gsl_matrix_complex,void (*)(gsl_matrix_complex*)>(matrix,gsl_matrix_complex_free);
 }
 
@@ -350,12 +371,14 @@ void gsl_complex_matrix_exponential(gsl_matrix_complex *eA, const gsl_matrix_com
 
 void gsl_matrix_complex_change_basis_UCMU(const gsl_matrix_complex* U, gsl_matrix_complex* M){
   int numneu = U->size1;
-  gsl_matrix_complex* U1 = gsl_matrix_complex_alloc(numneu,numneu);
-  gsl_matrix_complex* U2 = gsl_matrix_complex_alloc(numneu,numneu);
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder U1;
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder U2;
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder T1;
+  U1.reset(numneu,numneu);
+  U2.reset(numneu,numneu);
+  T1.reset(numneu,numneu);
   gsl_matrix_complex_memcpy(U1,U);
   gsl_matrix_complex_memcpy(U2,U);
-
-  gsl_matrix_complex* T1 = gsl_matrix_complex_alloc(numneu,numneu);
 
   // doing : U M U^dagger
   gsl_blas_zgemm(CblasNoTrans,CblasNoTrans,
@@ -364,20 +387,18 @@ void gsl_matrix_complex_change_basis_UCMU(const gsl_matrix_complex* U, gsl_matri
   gsl_blas_zgemm(CblasConjTrans,CblasNoTrans,
                  gsl_complex_rect(1.0,0.0),U2,
                  T1,gsl_complex_rect(0.0,0.0),M);
-
-  gsl_matrix_complex_free(U1);
-  gsl_matrix_complex_free(U2);
-  gsl_matrix_complex_free(T1);
 }
 
 void gsl_matrix_complex_change_basis_IUCMU(gsl_matrix_complex* U, gsl_matrix_complex* M){
   int numneu = U->size1;
-  gsl_matrix_complex* U1 = gsl_matrix_complex_alloc(numneu,numneu);
-  gsl_matrix_complex* U2 = gsl_matrix_complex_alloc(numneu,numneu);
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder U1;
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder U2;
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder T1;
+  U1.reset(numneu,numneu);
+  U2.reset(numneu,numneu);
+  T1.reset(numneu,numneu);
   gsl_matrix_complex_memcpy(U1,U);
   gsl_matrix_complex_memcpy(U2,U);
-
-  gsl_matrix_complex* T1 = gsl_matrix_complex_alloc(numneu,numneu);
 
   // doing : U^dagger M U
 
@@ -387,39 +408,43 @@ void gsl_matrix_complex_change_basis_IUCMU(gsl_matrix_complex* U, gsl_matrix_com
   gsl_blas_zgemm(CblasNoTrans,CblasNoTrans,
                  gsl_complex_rect(1.0,0.0),U2,
                  T1,gsl_complex_rect(0.0,0.0),M);
-
-  gsl_matrix_complex_free(U1);
-  gsl_matrix_complex_free(U2);
-  gsl_matrix_complex_free(T1);
 }
 
 
 SU_vector SU_vector::UTransform(const SU_vector& v, gsl_complex scale) const{
-  auto mv=v.GetGSLMatrix();
-  auto mu=(*this).GetGSLMatrix();
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder mv;
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder mu;
+  mv.reset(dim,dim);
+  mu.reset(dim,dim);
+  v.GetGSLMatrix(mv);
+  GetGSLMatrix(mu);
   //rescale the matrix
-  gsl_matrix_complex_scale(mv.get(),scale);
+  gsl_matrix_complex_scale(mv,scale);
 
   //declare and calculate matrix exponential
-  gsl_matrix_complex* em = gsl_matrix_complex_alloc (dim, dim);
-  math_detail::matrix_exponential(em,mv.get());
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder em;
+  em.reset(dim,dim);
+  math_detail::matrix_exponential(em,mv);
   // sandwich
-  gsl_matrix_complex_change_basis_UCMU(em, mu.get());
-  gsl_matrix_complex_free(em);
+  gsl_matrix_complex_change_basis_UCMU(em, mu);
 
-  return SU_vector(mu.get());
+  return SU_vector(mu);
 }
 
 SU_vector SU_vector::UTransform(gsl_matrix_complex* em) const{
-  auto mu=(*this).GetGSLMatrix();
-  gsl_matrix_complex_change_basis_UCMU(em, mu.get());
-  return SU_vector(mu.get());
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder mu;
+  mu.reset(dim,dim);
+  GetGSLMatrix(mu);
+  gsl_matrix_complex_change_basis_UCMU(em, mu);
+  return SU_vector(mu);
 }
 
 SU_vector SU_vector::UDaggerTransform(gsl_matrix_complex* em) const{
-  auto mu=(*this).GetGSLMatrix();
-  gsl_matrix_complex_change_basis_IUCMU(em, mu.get());
-  return SU_vector(mu.get());
+  SQUIDS_THREAD_LOCAL math_detail::gsl_matrix_complex_holder mu;
+  mu.reset(dim,dim);
+  GetGSLMatrix(mu);
+  gsl_matrix_complex_change_basis_IUCMU(em, mu);
+  return SU_vector(mu);
 }
 
 

@@ -57,7 +57,7 @@
  
  First, run the included configure script: 
  
-     ./config
+     ./configure
  
  It may be useful to run it with the `--help` flag in order to find out all
  available options. 
@@ -230,7 +230,7 @@ class SQuIDS {
   void Set_xrange(const std::vector<double>& xs);
   
   ///\brief Get the range of values for the array "x"
-  std::vector<double> Get_xrange() const{ return(x); }
+  const std::vector<double>& Get_xrange() const{ return(x); }
 
   //***************************************************************
   ///\brief Returns the closes position in the array x for the value given
