@@ -235,11 +235,14 @@ sed -e "s|__SQUIDS_VERSION__|$VERSION_NUM|g" \
 
 echo "Generating makefile..."
 
+PWD=`pwd`
+
+# TODO (Tom) I added absolute (but dynamic) paths for STAT/DYN_PRODUCT here due to issues linking on my system, need a better solution
 echo "# Directories
-LIBDIR:=lib
-INCDIR:=include
-SQINCDIR:=include/SQuIDS
-SRCDIR:=src
+LIBDIR:=$PWD/lib
+INCDIR:=$PWD/include
+SQINCDIR:=$PWD/include/SQuIDS
+SRCDIR:=$PWD/src
 INSTALL_LIBDIR:=$INSTALL_LIBDIR
 
 # Compiler
