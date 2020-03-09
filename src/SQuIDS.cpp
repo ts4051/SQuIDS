@@ -36,6 +36,7 @@ SQuIDS::SQuIDS():
 CoherentRhoTerms(false),
 NonCoherentRhoTerms(false),
 OtherRhoTerms(false),
+LindbladTerms(false),
 GammaScalarTerms(false),
 OtherScalarTerms(false),
 AnyNumerics(false),
@@ -66,6 +67,7 @@ SQuIDS::SQuIDS(SQuIDS&& other):
 CoherentRhoTerms(other.CoherentRhoTerms),
 NonCoherentRhoTerms(other.NonCoherentRhoTerms),
 OtherRhoTerms(other.OtherRhoTerms),
+LindbladTerms(other.LindbladTerms),
 GammaScalarTerms(other.GammaScalarTerms),
 OtherScalarTerms(other.OtherScalarTerms),
 AnyNumerics(other.AnyNumerics),
@@ -189,6 +191,7 @@ SQuIDS& SQuIDS::operator=(SQuIDS&& other){
   CoherentRhoTerms=other.CoherentRhoTerms;
   NonCoherentRhoTerms=other.NonCoherentRhoTerms;
   OtherRhoTerms=other.OtherRhoTerms;
+  LindbladTerms=other.LindbladTerms;
   GammaScalarTerms=other.GammaScalarTerms;
   OtherScalarTerms=other.OtherScalarTerms;
   AnyNumerics=other.AnyNumerics;
@@ -391,23 +394,27 @@ void SQuIDS::Set_AdaptiveStep(bool opt){
 }
 void SQuIDS::Set_CoherentRhoTerms(bool opt){
   CoherentRhoTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||LindbladTerms||GammaScalarTerms||OtherScalarTerms);
 }
 void SQuIDS::Set_NonCoherentRhoTerms(bool opt){
   NonCoherentRhoTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||LindbladTerms||GammaScalarTerms||OtherScalarTerms);
 }
 void SQuIDS::Set_OtherRhoTerms(bool opt){
   OtherRhoTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||LindbladTerms||GammaScalarTerms||OtherScalarTerms);
+}
+void SQuIDS::Set_LindbladTerms(bool opt){
+  LindbladTerms=opt;
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||LindbladTerms||GammaScalarTerms||OtherScalarTerms);
 }
 void SQuIDS::Set_GammaScalarTerms(bool opt){
   GammaScalarTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||LindbladTerms||GammaScalarTerms||OtherScalarTerms);
 }
 void SQuIDS::Set_OtherScalarTerms(bool opt){
   OtherScalarTerms=opt;
-  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||GammaScalarTerms||OtherScalarTerms);
+  AnyNumerics=(CoherentRhoTerms||NonCoherentRhoTerms||OtherRhoTerms||LindbladTerms||GammaScalarTerms||OtherScalarTerms);
 }
 
 void SQuIDS::Set_AnyNumerics(bool opt){
@@ -494,6 +501,9 @@ void SQuIDS::Derive(double at){
       // Other possible interaction, for example involving the Scalars or non linear terms in rho.
       if(OtherRhoTerms)
         dstate[ei].rho[i] += InteractionsRho(ei,i,t);
+      // Lindblad (open quantum system) operator
+      if(LindbladTerms)
+        dstate[ei].rho[i] -= DRho(ei,i,t);
     }
     //Scalars
     for(unsigned int is=0;is<nscalars;is++){

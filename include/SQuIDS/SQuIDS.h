@@ -117,7 +117,7 @@ class SQuIDS {
   };
 
  private:
-  bool CoherentRhoTerms,NonCoherentRhoTerms,OtherRhoTerms,GammaScalarTerms,OtherScalarTerms,AnyNumerics;
+  bool CoherentRhoTerms,NonCoherentRhoTerms,OtherRhoTerms,LindbladTerms,GammaScalarTerms,OtherScalarTerms,AnyNumerics;
   bool is_init;
   bool adaptive_step;
  
@@ -255,6 +255,10 @@ class SQuIDS {
   ///\param ix Index in the x-array
   ///\param t time
   virtual SU_vector InteractionsRho(unsigned int ix, unsigned int irho, double t) const{ return SU_vector(nsun);}
+  ///\brief Lindblad (open quantum system) operator (also known as decoherence or dissipation operator)
+  ///\param ix Index in the x-array
+  ///\param t time
+  virtual SU_vector DRho(unsigned int ix, unsigned int irho, double t) const{ return SU_vector(nsun);}
   ///\brief Attenuation for the scalar functions
   ///\param ix Index in the x-array
   ///\param t time
@@ -313,6 +317,8 @@ class SQuIDS {
   void Set_NonCoherentRhoTerms(bool opt);
   ///\brief Activate other SU_vector interactions
   void Set_OtherRhoTerms(bool opt);
+  ///\brief Lindblad operator
+  void Set_LindbladTerms(bool opt);
   ///\brief Activate other scalar interactions
   void Set_GammaScalarTerms(bool opt);
   ///\brief Activate other scalar interactions
